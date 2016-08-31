@@ -1,0 +1,14 @@
+rimage_0.5-8.3.tar.gz
+foreach_1.4.1.tar.gz
+bcp_3.0.1.tar.gz
+Rcpp_0.12.6.tar.gz
+iterators_1.0.6.tar.gz
+igraph_0.6-3.tar.gz
+quadprog_1.5-4.tar.gz
+rjson_0.2.11.tar.gz
+timeDate_2160.96.tar.gz
+timeSeries_2160.94.tar.gz
+tseries_0.10-29.tar.gz
+xts_0.8-6.tar.gz
+zoo_1.7-8.tar.gz
+entropy_1.2.0.tar.gz
