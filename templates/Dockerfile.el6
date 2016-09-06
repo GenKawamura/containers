@@ -1,0 +1,18 @@
+FROM centos:6.7
+
+## Generating basic baremetal configurations
+RUN yum --nogpgcheck -y install epel-release
+RUN yum --nogpgcheck -y install git unzip wget rpm-build
+RUN yum --nogpgcheck -y install http://download1.rpmfusion.org/free/el/updates/6/x86_64/rpmfusion-free-release-6-1.noarch.rpm
+
+
+## Calling a build script given from a remote repository
+RUN [ ! -z "$BUILD_SOURCE" ] && git clone $BUILD_SOURCE
+RUN [ ! -z "$BUILD_SCRIPT" ] && $BUILD_SCRIPT
+
+
+## Making a user
+RUN adduser $OWNER -u $OID -d $OWNER_HOME
+USER $OWNER
+ENV HOME $OWNER_HOME
+
