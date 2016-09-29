@@ -16,7 +16,7 @@ DOCKER_RUN(){
     docker -v | grep 1.5 &> /dev/null && CPUSET_OPTION="--cpuset=$cpu_num"
 
     echo "docker run -it --name $container_name --rm $CPUSET_OPTION -h $container_name -w $CONTAINER_WORKAREA -v $PWD:$CONTAINER_WORKAREA $CONTAINER_TAG $*"
-    docker run -it --name $container_name --rm $CPUSET_OPTION -h $container_name -w $CONTAINER_WORKAREA -v $PWD:$CONTAINER_WORKAREA $CONTAINER_TAG $*
+    /usr/bin/time -f "Processing Time = %e\n" docker run -it --name $container_name --rm $CPUSET_OPTION -h $container_name -w $CONTAINER_WORKAREA -v $PWD:$CONTAINER_WORKAREA $CONTAINER_TAG $*
 
 }
 
@@ -35,7 +35,9 @@ generate_cpu_workers(){
     patch $STANDALONE_TRAINER cifar10_standalone_train.patch
     patch $CLUSTER_TRAINER cifar10_cluster_train.patch2
 
-    ## Setting max steps
+    ## Setting max steps & workers
+    echo "MAX_STEPS = $num_of_steps"
+    echo "NUM_WORKERS = $num_of_workers"
     sed -e "s/MAX_STEPS/$num_of_steps/g" -i $STANDALONE_TRAINER
     sed -e "s/MAX_STEPS/$num_of_steps/g" -i $CLUSTER_TRAINER
     sed -e "s/NUM_WORKERS/$num_of_workers/g" -i $CLUSTER_TRAINER
