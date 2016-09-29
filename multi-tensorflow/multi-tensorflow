@@ -12,8 +12,12 @@ DOCKER_RUN(){
     shift
     shift
 
-    echo "docker run -it --name $container_name --rm --cpuset-cpus=$cpu_num -h $container_name -w $CONTAINER_WORKAREA -v $PWD:$CONTAINER_WORKAREA $CONTAINER_TAG $*"
-    docker run -it --name $container_name --rm --cpuset-cpus=$cpu_num -h $container_name -w $CONTAINER_WORKAREA -v $PWD:$CONTAINER_WORKAREA $CONTAINER_TAG $*
+    CPUSET_OPTION="--cpuset-cpus=$cpu_num"
+    docker -v | grep 1.5 &> /dev/null && CPUSET_OPTION="--cpuset=$cpu_num"
+
+    echo "docker run -it --name $container_name --rm $CPUSET_OPTION -h $container_name -w $CONTAINER_WORKAREA -v $PWD:$CONTAINER_WORKAREA $CONTAINER_TAG $*"
+    docker run -it --name $container_name --rm $CPUSET_OPTION -h $container_name -w $CONTAINER_WORKAREA -v $PWD:$CONTAINER_WORKAREA $CONTAINER_TAG $*
+
 }
 
 
