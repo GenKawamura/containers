@@ -1,0 +1,131 @@
+#!/bin/bash
+
+cd $(dirname $0)
+. multi-tensorflow.conf
+
+#-----------------------------------------------
+# Function
+#-----------------------------------------------
+DOCKER_RUN(){
+    local container_name=$1
+    local cpu_num=$2
+    shift
+    shift
+
+    echo "docker run -it --name $container_name --rm --cpuset-cpus=$cpu_num -h $container_name -w $CONTAINER_WORKAREA -v $PWD:$CONTAINER_WORKAREA $CONTAINER_TAG $*"
+    docker run -it --name $container_name --rm --cpuset-cpus=$cpu_num -h $container_name -w $CONTAINER_WORKAREA -v $PWD:$CONTAINER_WORKAREA $CONTAINER_TAG $*
+}
+
+
+generate_cpu_workers(){
+    local num_of_steps=$1
+    local num_of_workers=$2
+
+    ## Copying original file
+    #[ ! -e $CIFAR10_GPU_TRAINER ] && echo "Script [$CIFAR10_GPU_TRAINER] does not exist" && exit -1 
+    cp -v $CIFAR10_GPU_TRAINER $WORKAREA
+    cp -v $CIFAR10_GPU_TRAINER $STANDALONE_TRAINER
+    cp -v $CIFAR10_GPU_TRAINER $CLUSTER_TRAINER
+    
+    ## Patching for making standalone & cluster trainers
+    patch $STANDALONE_TRAINER cifar10_standalone_train.patch
+    patch $CLUSTER_TRAINER cifar10_cluster_train.patch2
+
+    ## Setting max steps
+    sed -e "s/MAX_STEPS/$num_of_steps/g" -i $STANDALONE_TRAINER
+    sed -e "s/MAX_STEPS/$num_of_steps/g" -i $CLUSTER_TRAINER
+    sed -e "s/NUM_WORKERS/$num_of_workers/g" -i $CLUSTER_TRAINER
+}
+
+
+generate_base_container(){
+    docker build -t $CONTAINER_TAG .
+}
+
+
+num_of_steps=100
+num_of_workers=2
+cpus=0-0
+usage="$0 [option]
+ -n:  num of steps [default: $num_of_steps]
+ -m:  num of workers [default: $num_of_workers]
+ -c:  CPUs [default: $cpus]
+
+ -C:  generate base container
+ -o:  generate script to workarea in docker
+ -s:  run in single mode
+ -p:  run a parameter server
+ -w:  run workers
+
+
+ * Examples
+   Building base container (named $CONTAINER_TAG)
+   $0 -C
+
+   Outputing scripts in workarea (max_step = 100)
+   $0 -n 100 -o
+
+   Running single mode (in CPU 0-3)
+   $0 -c 0-3 -s
+
+   Running parameter server
+   $0 -p
+
+   Running workers
+   $0 -w
+ 
+"
+
+if [ $# -eq 0 ]; then
+    echo "$usage"
+    exit 0
+fi
+
+
+#--------------------------
+# Getopt
+#--------------------------
+while getopts "n:m:c:gCopwshv" op
+  do
+  case $op in
+      n)  num_of_steps=$OPTARG
+	  ;;
+      m)  num_of_workers=$OPTARG
+	  ;;
+      c) cpus=$OPTARG
+	  ;;
+      g)
+	  generate_cpu_workers $num_of_steps $num_of_workers
+          ;;
+      C)
+	  generate_base_container
+	  ;;
+      o)
+	  DOCKER_RUN $TF_PARAMETER_SERVER 1 ./multi-tensorflow -n $num_of_steps -m $num_of_workers -g
+	  ;;
+      l)
+	  run_tf_lister
+	  ;;
+      p)
+	  DOCKER_RUN $TF_PARAMETER_SERVER 1 ./multi-tensorflow -p
+	  ;;
+      w)  
+	  DOCKER_RUN $TF_WORKER1 1 ./multi-tensorflow -w $OPTARG
+	  ;;
+      s)
+	  DOCKER_RUN $TF_PARAMETER_SERVER $cpus python workarea/cifar10_standalone_train.py
+	  #DOCKER_RUN $TF_PARAMETER_SERVER 1,2 cat /proc/cpuinfo
+	  ;;
+      h) echo "$usage"
+          exit 0
+          ;;
+      v) echo "$version"
+          exit 0
+          ;;
+      ?) echo "$usage"
+          exit 0
+          ;;
+  esac
+done
+
+

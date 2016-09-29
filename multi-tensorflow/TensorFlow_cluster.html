@@ -1,0 +1,805 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN"
+  "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" version="XHTML+RDFa 1.0" dir="ltr"
+  
+  xmlns:content="http://purl.org/rss/1.0/modules/content/"
+  xmlns:dc="http://purl.org/dc/terms/"
+  xmlns:foaf="http://xmlns.com/foaf/0.1/"
+  xmlns:og="http://ogp.me/ns#"
+  xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+  xmlns:sioc="http://rdfs.org/sioc/ns#"
+  xmlns:sioct="http://rdfs.org/sioc/types#"
+  xmlns:skos="http://www.w3.org/2004/02/skos/core#"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema#">
+
+<head profile="http://www.w3.org/1999/xhtml/vocab">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="shortcut icon" href="http://www.intellilink.co.jp/sites/default/files/favicon_0.ico" type="image/vnd.microsoft.icon" />
+<link rel="canonical" href="/article/column/bigdata-tf01.html" />
+<link rel="shortlink" href="/node/2593" />
+  <title>TensorFlowクラスタで ディープラーニングの分散処理環境を構築してみる | NTTデータ先端技術株式会社</title>
+  <style type="text/css" media="all">
+@import url("http://www.intellilink.co.jp/modules/system/system.base.css?oapotq");
+@import url("http://www.intellilink.co.jp/modules/system/system.menus.css?oapotq");
+@import url("http://www.intellilink.co.jp/modules/system/system.messages.css?oapotq");
+@import url("http://www.intellilink.co.jp/modules/system/system.theme.css?oapotq");
+</style>
+<style type="text/css" media="all">
+@import url("http://www.intellilink.co.jp/sites/all/modules/scroll_to_top/scroll_to_top.css?oapotq");
+@import url("http://www.intellilink.co.jp/modules/comment/comment.css?oapotq");
+@import url("http://www.intellilink.co.jp/modules/field/theme/field.css?oapotq");
+@import url("http://www.intellilink.co.jp/modules/node/node.css?oapotq");
+@import url("http://www.intellilink.co.jp/modules/search/search.css?oapotq");
+@import url("http://www.intellilink.co.jp/modules/user/user.css?oapotq");
+@import url("http://www.intellilink.co.jp/sites/all/modules/views/css/views.css?oapotq");
+</style>
+<style type="text/css" media="all">
+@import url("http://www.intellilink.co.jp/sites/all/themes/basic/css/tabs.css?oapotq");
+@import url("http://www.intellilink.co.jp/sites/all/modules/ckeditor/ckeditor.css?oapotq");
+@import url("http://www.intellilink.co.jp/sites/all/modules/ctools/css/ctools.css?oapotq");
+@import url("http://www.intellilink.co.jp/sites/all/modules/panels/css/panels.css?oapotq");
+</style>
+<style type="text/css" media="all">
+<!--/*--><![CDATA[/*><!--*/
+#back-top{right:40px;}#back-top span#button{background-color:#aaaaaa;}#back-top span#button:hover{opacity:1;filter:alpha(opacity = 1);background-color:#666666;}
+
+/*]]>*/-->
+</style>
+<style type="text/css" media="all">
+@import url("http://www.intellilink.co.jp/sites/all/themes/basic/css/default.css?oapotq");
+@import url("http://www.intellilink.co.jp/sites/all/themes/basic/css/layout.css?oapotq");
+@import url("http://www.intellilink.co.jp/sites/all/themes/basic/css/style.css?oapotq");
+</style>
+<style type="text/css" media="print">
+@import url("http://www.intellilink.co.jp/sites/all/themes/basic/css/print.css?oapotq");
+</style>
+  <script type="text/javascript" src="http://www.intellilink.co.jp/sites/default/files/js/js_gam0c92gTspMYtadSvCYU4LmcrJOl6mruic2otZm0Ic.js"></script>
+<script type="text/javascript" src="http://www.intellilink.co.jp/sites/default/files/js/js_Vko5IQ7ck3QD6qeVBGqVwFnYN749hsY3iTSZr-B-ysE.js"></script>
+<script type="text/javascript">
+<!--//--><![CDATA[//><!--
+jQuery.extend(Drupal.settings, {"basePath":"\/","pathPrefix":"","ajaxPageState":{"theme":"basic","theme_token":"cy_bzcPMQrrZS3nB5myjzkiv2AM3Mn5RaM69x8gqHG8","js":{"sites\/all\/modules\/jquery_update\/replace\/jquery\/1.7\/jquery.min.js":1,"misc\/jquery.once.js":1,"misc\/drupal.js":1,"public:\/\/languages\/ja_IncZ8IkQdu87JoTfsRuYZZ_DE3BAk5UAeu4lz9mM9sQ.js":1,"sites\/all\/modules\/panels\/js\/panels.js":1,"sites\/all\/modules\/scroll_to_top\/scroll_to_top.js":1},"css":{"modules\/system\/system.base.css":1,"modules\/system\/system.menus.css":1,"modules\/system\/system.messages.css":1,"modules\/system\/system.theme.css":1,"sites\/all\/modules\/scroll_to_top\/scroll_to_top.css":1,"modules\/comment\/comment.css":1,"modules\/field\/theme\/field.css":1,"modules\/node\/node.css":1,"modules\/search\/search.css":1,"modules\/user\/user.css":1,"sites\/all\/modules\/views\/css\/views.css":1,"sites\/all\/themes\/basic\/css\/tabs.css":1,"sites\/all\/modules\/ckeditor\/ckeditor.css":1,"sites\/all\/modules\/ctools\/css\/ctools.css":1,"sites\/all\/modules\/panels\/css\/panels.css":1,"0":1,"sites\/all\/themes\/basic\/css\/default.css":1,"sites\/all\/themes\/basic\/css\/layout.css":1,"sites\/all\/themes\/basic\/css\/style.css":1,"sites\/all\/themes\/basic\/css\/print.css":1}},"scroll_to_top":{"label":"BACK TO TOP"},"urlIsAjaxTrusted":{"\/article\/column\/bigdata-tf01.html":true}});
+//--><!]]>
+</script>
+</head>
+<body class="html not-front not-logged-in one-sidebar sidebar-second page-node page-node- page-node-2593 node-type-column" >
+  <div id="skip">
+    <a href="#main-menu">Jump to Navigation</a>
+  </div>
+    <div id="page" class="page">
+
+  <!-- ______________________ HEADER _______________________ -->
+
+  <div id="header">
+
+          <a href="/" title="ホーム" rel="home" id="logo">
+        <img src="http://www.intellilink.co.jp/sites/all/themes/basic/logo.png" alt="ホーム"/>
+      </a>
+    
+    
+          <div id="header-region">
+          <div class="region region-header">
+    <div id="block-search-form" class="block block-search block-odd first clearfix">
+  <div class="block-inner">
+
+                <h2 class="block-title">サイト内検索</h2>
+          		
+		<div class="content" >
+		  <form action="/article/column/bigdata-tf01.html" method="post" id="search-block-form" accept-charset="UTF-8"><div><div class="container-inline">
+    <div class="form-item form-type-textfield form-item-search-block-form">
+  <label class="element-invisible" for="edit-search-block-form--2">検索 </label>
+ <input title="検索したいキーワードを入力してください" type="text" id="edit-search-block-form--2" name="search_block_form" value="" size="15" maxlength="128" class="form-text" />
+</div>
+<div class="form-actions form-wrapper" id="edit-actions"><input type="submit" id="edit-submit" name="op" value="検索" class="form-submit" /></div><input type="hidden" name="form_build_id" value="form-W0CRqnFKPy5Vf372wCsuoqM9zzu842NP4RmE1M-xIc4" />
+<input type="hidden" name="form_id" value="search_block_form" />
+</div>
+</div></form>		</div>
+
+  </div>
+</div> <!-- /block-inner /block --><div id="block-system-main-menu" class="block block-system block-menu block-even last clearfix">
+  <div class="block-inner">
+
+                		
+		<div class="content" >
+		  <ul class="menu"><li class="first leaf id- mid-218"><a href="/" title="">ホーム</a></li>
+<li class="leaf id- mid-2764"><a href="/business/index.html" title="">ソリューション・サービス・製品</a></li>
+<li class="leaf id- mid-347"><a href="/education/index.html" title="">研修</a></li>
+<li class="leaf id- mid-1823"><a href="/article/column/index.html">コラム</a></li>
+<li class="leaf id- mid-348"><a href="/plan/corporate" title="">企業情報</a></li>
+<li class="leaf id- mid-1742"><a href="/recruit/index.html" title="">採用情報</a></li>
+<li class="last leaf english mid-2695"><a href="/en/index.html" title="">English</a></li>
+</ul>		</div>
+
+  </div>
+</div> <!-- /block-inner /block -->  </div>
+      </div>
+    
+  </div> <!-- /header -->
+
+  <!-- ______________________ MAIN _______________________ -->
+
+  <div id="main" class="clearfix">
+
+    <div id="content">
+      <div id="content-inner" class="inner column center">
+
+                  <div id="content-header">
+
+            <h2 class="element-invisible">現在地</h2><div class="breadcrumb"><a href="/">ホーム</a>><a href="/article/column/index.html" title="" class="active-trail">コラム</a>><a href="/article/column/bigdata/index.html" title="" class="active-trail">ビッグデータコラム Column on Big Data Analytics and Platform</a>>TensorFlowクラスタで ディープラーニングの分散処理環境を構築してみる</div>
+            
+                          <h1 class="title">TensorFlowクラスタで ディープラーニングの分散処理環境を構築してみる</h1>
+            
+                                    
+                          <div class="tabs"></div>
+            
+                        
+          </div> <!-- /#content-header -->
+        
+        <div id="content-area">
+            <div class="region region-content">
+    <div id="block-system-main" class="block block-system block-odd first clearfix">
+  <div class="block-inner">
+
+                		
+		<div class="content" >
+		  <div id="node-2593" class="node node-column node-odd">
+	<div class="node-inner">
+    
+    
+    		    
+    
+  	<div class="content">
+  	  <div class="field field-name-body field-type-text-with-summary field-label-hidden"><div class="field-items"><div class="field-item even" property="content:encoded"><script type="text/javascript" src="http://www.intellilink.co.jp/sites/all/themes/basic/js/syntaxhighlighter/scripts/shCore.js"></script>
+<script type="text/javascript" src="http://www.intellilink.co.jp/sites/all/themes/basic/js/syntaxhighlighter/scripts/shBrushJScript.js"></script>
+<link type="text/css" rel="stylesheet" href="http://www.intellilink.co.jp/sites/all/themes/basic/js/syntaxhighlighter/styles/shCoreDefault.css"/>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+
+<style type="text/css">
+<!--
+.syntaxhighlighter .line.alt1 {
+	background-color:  #f5f5f5 !important;
+}
+pre {
+	overflow: auto;
+	white-space: pre-wrap;
+	word-wrap: break-word;
+	font-size: 89%;
+}
+p {
+	text-align: justify;
+	text-justify: inter-ideograph;
+	line-height: 1.857;
+}
+p.division {
+	line-height: 1.4em;
+	margin-top: 0;
+	font-size: 14px;
+}
+p.status {
+	font-size: 18px;
+	font-weight: bold;
+	line-height: 1.2em;
+	margin-top: 10px;
+}
+
+hr {
+	margin: 20px 0;
+}
+.bt-area {
+	margin-top: 20px;
+	display: table;
+	width: 100%
+}
+.bt-before, .bt-next {
+	font-size: 18px;
+	display: table-cell;
+	width: 50%;
+	font-weight: bold;
+	text-decoration: none;
+	padding: 18px 0;
+}
+.bt-before {
+	background: url("/sites/default/files/imported/recruit/image/ar-before.png") no-repeat left center transparent;
+	text-align: left;
+	padding-left: 56px;
+}
+.bt-next {
+	background: url("/sites/default/files/imported/recruit/image/ar-next.png") no-repeat right center transparent;
+	text-align: right;
+	padding-right: 56px;
+}
+-->
+</style>
+
+<br />
+<!-- ▼ボタン▼ -->
+<a href="http://twitter.com/share" class="twitter-share-button" data-text="ビッグデータコラム「TensorFlowクラスタでディープラーニングの分散処理環境を構築してみる」/NTTデータ先端技術" data-count="horizontal">Tweet</a><script type="text/javascript" src="http://platform.twitter.com/widgets.js"></script>
+
+<iframe src="http://www.facebook.com/plugins/like.php?href=http%3A%2F%2Fwww.intellilink.co.jp%2Farticle%2Fcolumn%2Fbigdata-tf01.html&amp;send=false&amp;layout=button_count&amp;width=450&amp;show_faces=false&amp;action=like&amp;colorscheme=light&amp;font&amp;height=20" scrolling="no" frameborder="0" style="border:none; overflow:hidden; width:450px; height:20px;" allowTransparency="true"></iframe>
+<!-- ▲ボタン▲ -->
+<br /><br />
+<div class="clearfix">
+	<div class="f_left" style="width: 90px">
+		<img width="80" height="80" alt="稲葉明彦" src="/sites/default/files/imported/article/column/bigdata-inaba.png" />
+	</div>
+	<div class="f_left" style="width: 616px">
+		<p class="division">ソリューション事業部<br />OSS基盤ビジネスユニット&nbsp;ビッグデータグループ<br />主任エンジニア</p>
+		<p class="status">稲葉 明彦</p>
+	</div>
+</div>
+
+<h2>機械学習とディープラーニング</h2>
+<p>機械学習という言葉がバズワードになって久しく、今では人工知能という名のもとに、商品のレコメンド機能や自動車の自動運転技術、相場の予測など実社会にも次々に応用され始めている。<br />その機械学習アルゴリズムの中でも近年特に注目を浴びているのがディープラーニングだ。2016年3月に、Google社が開発したディープラーニングを利用した囲碁用の人工知能「AlphaGo」が世界トップクラスのプロ棋士に勝利したという衝撃的なニュースでも記憶に新しいだろう。<br />本コラムでは、最新バージョンが先月公開され、AlphaGoでも利用されているGoogleの機械学習フレームワーク「TensorFlow8.0」の目玉機能である分散処理機能についてご紹介する。</p>
+
+<h2>TensorFlowとは</h2>
+<p>ディープラーニングが目覚ましい進化を遂げた2010年代以降、カリフォルニア大学バークレー校の「Caffe」やFacebook社の「Torch」など、さまざまな対応フレームワークが登場している。そんな中、2015年11月に満を持して公開されたGoogle社の「TensorFlow」は、よく整備されたドキュメント類やサンプル、学習状況を手軽に可視化できる「TensorBoard」、そして何より「Google社が自社の数々のプロジェクトで実際に利用している」という信頼性により、今やディープラーニング用フレームワークのデファクトスタンダードになりつつある。</p>
+
+<h2>本コラムの趣旨</h2>
+<p>ディープラーニングは高い学習能力を誇る反面、非常に計算負荷が高くなるアルゴリズムであるため、分散処理が必須である。前述したAlphaGoでもCPU1202個、GPU176個で分散処理を行っている。そこで、本コラムでは実際にバージョン0.8で新たに追加されたクラスタ機能を用いて、TensorFlowの分散処理環境(Distributed TensorFlow)の構築を行い、サンプルを改編したモデルを実行して実際に性能がスケールアウトされることを確認する。構成はパラメーター・サーバー1台、ワーカー・ホスト2台の3台構成となる(下図参照)。</p>
+<p><img width="714" height="446" alt="" src="/sites/default/files/imported/article/column/bigdatatf-01-01.png" /></p>
+
+<p>構築はDockerの仮想環境上に行うので一般的なLinuxディストリビューションの環境があれば実施可能である。Windowsでも仮想化支援機能を備えたCPUを搭載したマシンであればHyper-VやVirtualBoxなどのハイパーバイザを用いてLinux環境を用意すれば同様である。もちろんAWSやAzureなどのクラウド上のIaaS環境でも問題ない。ただし、いずれの場合もクラスタの有効性を効果的に確認できるよう各コンテナに1コアずつ指定して割り振るために、クアッドコア以上のCPUであることが望ましい。</p>
+<p>注：</p>
+<ul>
+	<li>本来であれば、クラスタ化による性能のスケールアウトの検証を行う場合はその効果を正確に測るため、各マシンは物理的に切り離された形で構築されるべきであるが、本コラムの趣旨はあくまで機能の紹介であるため、利便性を優先し仮想環境で構築を行っている。</li>
+	<li>本コラムはTensorFlowをこれまで使用したことがなく、この機に試してみたいと考えている入門者、またはすでにTensorFlowを利用しておりクラスタ機能の具体的な実装方法を確認したい経験者の方を対象読者として想定しているため、サンプルコードの内容や機械学習およびディープラーニング自体に関する理論的な解説については割愛し、クラスタ機能に関する部分に焦点を絞ってご紹介させていただくこととする。</li>
+</ul>
+
+<h2>環境の導入</h2>
+<p>本節ではTensorFlowクラスタの基盤となるDocker環境の構築、およびTensorFlowイメージの導入を行う。Dockerでの操作は基本的にroot権限が必要となるため、以降のホスト側での作業は全てrootもしくはsudoユーザーで実行されることを想定している点をご注意願いたい。</p>
+
+<h3>Dockerのインストールとデーモンの起動</h3>
+<p>Red Hat系OSの場合(例：CentOS7)：</p>
+<pre class="brush: js; toolbar: false">
+[root@localhost ~]# yum –y epel-release
+[root@localhost ~]# yum –y install docker-io
+[root@localhost ~]# systemctl start docker
+[root@localhost ~]# systemctl status docker	# Dockerデーモンの起動確認
+</pre>
+
+<p>Debian系OSの場合(例：Ubuntu16.04LTS)：</p>
+<pre class="brush: js; toolbar: false">
+root@localhost:~$ apt-get update
+root@localhost:~$ apt-get –y install docker.io
+root@localhost:~$ service docker start
+root@localhost:~$ service docker status	# Dockerデーモンの起動確認
+</pre>
+
+<p>以降では、Red Hat系での環境を想定して話を進めることとする。</p>
+
+<h3>TensorFlowイメージのダウンロード</h3>
+<p>TensorFlowでは公式のDockerイメージが公開されており、面倒な環境構築などをせずに仮想環境上で手軽に利用できるようになっている。下記のコマンドでイメージをダウンロードすることができる。</p>
+<pre class="brush: js; toolbar: false">
+[root@localhost ~]# docker pull gcr.io/tensorflow/tensorflow:0.8.0
+[root@localhost ~]# docker images	# イメージがダウンロードされていることを確認
+REPOSITORY 		TAG 	IMAGE ID		CREATED		VIRTUAL SIZE
+gcr.io/tensorflow/tensorflow	0.8.0	6365706aad48 	2 weeks ago 		714.1 MB
+</pre>
+
+<h3>各コンテナの起動</h3>
+<p>Dockerコンテナの起動を行う。本コラムで構築する環境では各クラスタのインスタンスはPythonのインタラクティブシェル上で実行するため、各コンテナの起動はそれぞれ別のターミナルを立ち上げて実行していただきたい。</p>
+<h4>パラメーター・サーバー用コンテナの起動</h4>
+<pre class="brush: js; toolbar: false">
+[root@localhost ~]# docker run -it --name tf_paramserver --rm --cpuset-cpus 0 -h tf_paramserver -v <ホストマシン上の共有ディレクトリのパス>:/tmp gcr.io/tensorflow/tensorflow:0.8.0 /bin/bash
+root@tf_paramserver:/notebooks#		# 作成したコンテナに移動した
+root@tf_paramserver:/notebooks# ifconfig	# コンテナのIPの確認
+eth0      Link encap:Ethernet  HWaddr 02:42:ac:11:00:02
+          inet addr:<パラメーター・サーバーのIP>  Bcast:0.0.0.0  Mask:255.255.0.0
+          inet6 addr: fe80::42:acff:fe11:2/64 Scope:Link
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:20 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:7 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0
+          RX bytes:1584 (1.5 KB)  TX bytes:558 (558.0 B)
+
+lo        Link encap:Local Loopback
+          inet addr:127.0.0.1  Mask:255.0.0.0
+          inet6 addr: ::1/128 Scope:Host
+          UP LOOPBACK RUNNING  MTU:65536  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0
+          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+</pre>
+
+<h4>ワーカー・ホスト1用のコンテナの起動</h4>
+<pre class="brush: js; toolbar: false">
+[root@localhost ~]# docker run -it --name tf_worker_1 --rm --cpuset-cpus 1 -h tf_worker_1 -v <ホストマシン上の共有ディレクトリのパス>:/tmp gcr.io/tensorflow/tensorflow:0.8.0 /bin/bash
+root@tf_worker_1:/notebooks#		# 作成したコンテナに移動した
+root@tf_worker_1:/notebooks# ifconfig	# コンテナのIPの確認
+eth0      Link encap:Ethernet  HWaddr 02:42:ac:11:00:03
+          inet addr: <ワーカー・ホスト１のIP>  Bcast:0.0.0.0  Mask:255.255.0.0
+          inet6 addr: fe80::42:acff:fe11:3/64 Scope:Link
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:13 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:7 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0
+          RX bytes:1026 (1.0 KB)  TX bytes:558 (558.0 B)
+
+lo        Link encap:Local Loopback
+          inet addr:127.0.0.1  Mask:255.0.0.0
+          inet6 addr: ::1/128 Scope:Host
+          UP LOOPBACK RUNNING  MTU:65536  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0
+          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+</pre>
+
+<h4>ワーカー・ホスト2用のコンテナの起動</h4>
+<pre class="brush: js; toolbar: false">
+[root@localhost ~]# docker run -it --name tf_worker_2 --rm --cpuset-cpus 2 -h tf_worker_2 -v <ホストマシン上の共有ディレクトリのパス>:/tmp gcr.io/tensorflow/tensorflow:0.8.0 /bin/bash
+root@tf_worker_2:/notebooks#		# 作成したコンテナに移動した
+root@tf_worker_2:/notebooks# ifconfig	# コンテナのIPの確認
+eth0      Link encap:Ethernet  HWaddr 02:42:ac:11:00:04
+          inet addr: <ワーカー・ホスト２のIP>  Bcast:0.0.0.0  Mask:255.255.0.0
+          inet6 addr: fe80::42:acff:fe11:4/64 Scope:Link
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:6 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:7 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0
+          RX bytes:468 (468.0 B)  TX bytes:558 (558.0 B)
+
+lo        Link encap:Local Loopback
+          inet addr:127.0.0.1  Mask:255.0.0.0
+          inet6 addr: ::1/128 Scope:Host
+          UP LOOPBACK RUNNING  MTU:65536  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0
+          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+</pre>
+
+<p>docker runコマンドにおける各オプションの概要は下記の通り。</p>
+<table>
+	<tr><th>-it</th><td>コンテナ起動後、そのコンテナにアタッチする</td></tr>
+	<tr><th>--name</th><td>コンテナ名を指定する</td></tr>
+	<tr><th>--rm</th><td>コンテナ終了後、自動的にそのコンテナの削除を行う</td></tr>
+	<tr><th>--cpuset-cpus</th><td>使用するCPUを指定する</td></tr>
+	<tr><th>-h</th><td>コンテナのホスト名を指定する</td></tr>
+	<tr><th>-v</th><td>ホスト、ゲスト間の共有ディレクトリを指定する</td></tr>
+</table>
+
+<p><span style="color: blue;"><ホストマシン上の共有ディレクトリのパス></span>にはデータや学習結果などを各インスタンスで共有するためのディレクトリを指定する。<br />各コンテナとも同一のディレクトリを指定すること。読み・書き・実行の権限が付与されていれば場所は特にどこでも問題ない。<br />また、後の工程で使用するため、ifconfigコマンドの出力より各コンテナのIPを記録しておくこと。</p>
+
+<h2>サンプルスクリプトについて</h2>
+<p>構築したクラスタで実行するモデルには、TensorFlow v0.8にサンプルとして組み込まれているcifar-10のモデルをクラスタ用に修正したものを利用することとする。</p>
+<p>cifar-10とは、機械学習モデルの評価によく用いられるデータセットのひとつで、下図のような10カテゴリーに分類された画像が学習用に5万枚、テスト用に1万枚用意されたものである。</p>
+<p style="text-align: center;"><img width="714" height="555" alt="" src="/sites/default/files/imported/article/column/bigdatatf-01-03.png" /><br /><span style="font-size: 14px;">(出典：<a class="link" href="https://www.tensorflow.org/versions/r0.7/tutorials/deep_cnn/index.html" target="_blank">https://www.tensorflow.org/versions/r0.7/tutorials/deep_cnn/index.html</a>)</p>
+
+<p>cifar-10モデルでは、学習用データで各カテゴリーの特徴を学習させた後、ランダムに選択されたテスト用データのカテゴリーを推測させる問題を解く。</p>
+<p>前述したとおり、ディープラーニングの理論的解説についてはここでは述べないが、当該モデルの処理のイメージは下記のようなものになっている。</p>
+<p style="margin-bottom: 20px;"><img width="714" height="446" alt="" src="/sites/default/files/imported/article/column/bigdatatf-01-02.png" /></p>
+<ol>
+	<li>各ワーカー・ホストがパラメーター・サーバーから変数(パラメーター)を受け取る</li>
+	<li>ワーカー・ホストは受け取った各変数について、定義されたモデルに則り学習用データから算出した勾配を各々計算する</li>
+	<li>パラメーター・サーバーは各ワーカー・ホストから勾配の計算結果を受け取り平均する</li>
+	<li>パラメーター・サーバーは平均された勾配を元に、各変数を更新する</li>
+</ol>
+
+<p>それではここからクラスタ環境で実行するためのサンプルスクリプトの準備を進める。サンプルスクリプトを実行するクライアントとして新たにターミナルをひとつ立ち上げ、以下のコマンドを実行しパラメーター・サーバー用コンテナにアタッチする。</p>
+<pre class="brush: js; toolbar: false">
+[root@localhost ~]# docker exec –it tf_paramserver /bin/bash
+</pre>
+
+<p>続いて、基となるcifar10用のモデルをカレントディレクトリーにコピーする。</p>
+<pre class="brush: js; toolbar: false">
+root@tf_paramserver:/notebooks# cp /usr/local/lib/python2.7/dist-packages/tensorflow/models/image/cifar10/cifar10_multi_gpu_train.py .
+</pre>
+
+<p>スタンドアローン用、クラスター用の各パッチファイルをコピー＆ペーストにてそれぞれ作成する。</p>
+<h4>cifar10_standalone_train.patch</h4>
+<pre class="brush: js; toolbar: false">
+--- cifar10_multi_gpu_train.py  2016-04-13 00:00:00.000000000 +0000
++++ cifar10_standalone_train.py    2016-04-13 00:00:00.000000000 +0000
+@@ -54,7 +54,7 @@ FLAGS = tf.app.flags.FLAGS
+ tf.app.flags.DEFINE_string('train_dir', '/tmp/cifar10_train',
+                            """Directory where to write event logs """
+                            """and checkpoint.""")
+-tf.app.flags.DEFINE_integer('max_steps', 1000000,
++tf.app.flags.DEFINE_integer('max_steps', 1000,
+                             """Number of batches to run.""")
+ tf.app.flags.DEFINE_integer('num_gpus', 1,
+                             """How many GPUs to use.""")
+</pre>
+
+<h4>cifar10_cluster_train.patch</h4>
+<pre class="brush: js; toolbar: false">
+--- cifar10_multi_gpu_train.py  2016-04-13 00:00:00.000000000 +0000
++++ cifar10_cluster_train.py    2016-04-13 00:00:00.000000000 +0000
+@@ -49,14 +49,16 @@ from six.moves import xrange  # pylint:
+ import tensorflow as tf
+ from tensorflow.models.image.cifar10 import cifar10
+
++PS_NODE = "<パラメーター・サーバーのIP>"
++
+ FLAGS = tf.app.flags.FLAGS
+
+ tf.app.flags.DEFINE_string('train_dir', '/tmp/cifar10_train',
+                            """Directory where to write event logs """
+                            """and checkpoint.""")
+-tf.app.flags.DEFINE_integer('max_steps', 1000000,
++tf.app.flags.DEFINE_integer('max_steps', 1000,
+                             """Number of batches to run.""")
+-tf.app.flags.DEFINE_integer('num_gpus', 1,
++tf.app.flags.DEFINE_integer('num_workers', 2,
+                             """How many GPUs to use.""")
+ tf.app.flags.DEFINE_boolean('log_device_placement', False,
+                             """Whether to log device placement.""")
+@@ -147,7 +149,7 @@ def average_gradients(tower_grads):
+
+ def train():
+   """Train CIFAR-10 for a number of steps."""
+-  with tf.Graph().as_default(), tf.device('/cpu:0'):
++  with tf.Graph().as_default(), tf.device('/job:ps/task:0/cpu:0'):
+     # Create a variable to count the number of train() calls. This equals the
+     # number of batches processed * FLAGS.num_gpus.
+     global_step = tf.get_variable(
+@@ -171,8 +173,8 @@ def train():
+
+     # Calculate the gradients for each model tower.
+     tower_grads = [] 
+-    for i in xrange(FLAGS.num_gpus):
+-      with tf.device('/gpu:%d' % i):
++    for i in xrange(FLAGS.num_workers):
++      with tf.device('/job:worker/task:%d/cpu:0' % i):
+         with tf.name_scope('%s_%d' % (cifar10.TOWER_NAME, i)) as scope:
+           # Calculate the loss for one tower of the CIFAR model. This function
+           # constructs the entire CIFAR model but shares the variables across
+@@ -231,9 +233,7 @@ def train():
+     # Start running operations on the Graph. allow_soft_placement must be set to
+     # True to build towers on GPU, as some of the ops do not have GPU
+     # implementations.
+-    sess = tf.Session(config=tf.ConfigProto(
+-        allow_soft_placement=True,
+-        log_device_placement=FLAGS.log_device_placement))
++    sess = tf.Session("grpc://%s:2222" % PS_NODE)
+     sess.run(init)
+
+     # Start the queue runners.
+@@ -249,9 +249,9 @@ def train():
+       assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
+
+       if step % 10 == 0:
+-        num_examples_per_step = FLAGS.batch_size * FLAGS.num_gpus
++        num_examples_per_step = FLAGS.batch_size * FLAGS.num_workers
+         examples_per_sec = num_examples_per_step / duration
+-        sec_per_batch = duration / FLAGS.num_gpus
++        sec_per_batch = duration / FLAGS.num_workers
+
+         format_str = ('%s: step %d, loss = %.2f (%.1f examples/sec; %.3f '
+                       'sec/batch)')
+</pre>
+
+<p>下記のコマンドを実行して、作成したパッチファイルをコピーしたサンプルスクリプトに適用する。</p>
+<pre class="brush: js; toolbar: false">
+root@tf_paramserver:/notebooks# cp ./cifar10_multi_gpu_train.py ./cifar10_standalone_train.py
+root@tf_paramserver:/notebooks# cp ./cifar10_multi_gpu_train.py ./cifar10_cluster_train.py
+root@tf_paramserver:/notebooks# patch ./cifar10_standalone_train.py ./cifar10_standalone_train.patch
+patching file cifar10_standalone_train.py
+root@tf_paramserver:/notebooks# patch ./cifar10_cluster_train.py ./cifar10_cluster_train.patch
+patching file cifar10_cluster_train.py
+</pre>
+<p>スクリプトの主な変更点はそれぞれ下記の通り。各クラスや関数の定義などについては公式ドキュメントを参照していただきたい。</p>
+
+<h4>スタンドアローン版<br />cifar10_standalone_train.patch：7〜8行目</h4>
+<pre class="brush: js; toolbar: false">
+-tf.app.flags.DEFINE_integer('max_steps', 1000000,
++tf.app.flags.DEFINE_integer('max_steps', 1000,
+</pre>
+<p>変更前のモデルではデフォルトで100万ステップの学習を行っているが、これを並列化せずに実行すると最新のCPUを用いても非常に時間がかかってしまう。幸い、今回確認したいのは処理速度だけなので、手軽に実行できるようステップ数を1,000回に設定している。1,000回でも時間がかかる場合はさらに少なくしても問題ない。</p>
+
+<h4>クラスター版<br />cifar10_cluster_train.patch：7行目</h4>
+<pre class="brush: js; toolbar: false">
++PS_NODE = "<パラメーター・サーバーのIP>"
+</pre>
+<p>パラメーター・サーバーのIPを指定する変数を定義する。</p>
+
+<h4>cifar10_cluster_train.patch：17〜18行目</h4>
+<pre class="brush: js; toolbar: false">
+-tf.app.flags.DEFINE_integer('num_gpus', 1,
++tf.app.flags.DEFINE_integer('num_workers', 2,
+</pre>
+<p>変更前のモデルはマルチGPU対応となっているが、そこで指定される各GPUをクラスタ版ではワーカー・ホストに対応させている。今回は2つのワーカー・ホストを登録するので数量を2に設定。</p>
+
+<h4>cifar10_cluster_train.patch：26〜27行目</h4>
+<pre class="brush: js; toolbar: false">
+-  with tf.Graph().as_default(), tf.device('/cpu:0'):
++  with tf.Graph().as_default(), tf.device('/job:ps/task:0/cpu:0'):
+</pre>
+<p>変更前のモデルではCPUにパラメーター・サーバーの役割に相当する部分を担わせているため、その部分をパラメーター・サーバーに割り当てる。</p>
+
+<h4>cifar10_cluster_train.patch：35〜38行目</h4>
+<pre class="brush: js; toolbar: false">
+-    for i in xrange(FLAGS.num_gpus):
+-      with tf.device('/gpu:%d' % i):
++    for i in xrange(FLAGS.num_workers):
++      with tf.device('/job:worker/task:%d/cpu:0' % i):
+</pre>
+<p>同様に、変更前のモデルでGPUが担当している箇所をワーカー・ホストに置き換える。</p>
+
+<h4>cifar10_cluster_train.patch：46〜49行目</h4>
+<pre class="brush: js; toolbar: false">
+-    sess = tf.Session(config=tf.ConfigProto(
+-        allow_soft_placement=True,
+-        log_device_placement=FLAGS.log_device_placement))
++    sess = tf.Session("grpc://%s:2222" % PS_NODE)
+</pre>
+<p>セッションの生成部分。修正前と後で引数の内容が下記のように変更されている。</p>
+
+<table>
+	<tr><th colspan="2">引数名</th><th>説明</th><th>修正前</th><th>修正後</th></tr>
+	<tr><td colspan="2">Target</td><td>セッションを実行する対象を指定する</td><td>なし(実行中のプロセス)</td><td>ホスト：パラメーター・サーバー<br />ポート：2222<br />プロトコル：gRPC</td></tr>
+	<tr><td rowspan="2">config</td><td>allow_soft_placemet</td><td style="width: 190px;">デバイスの自動割り当てを行うか否か</td><td>True</td><td>なし(False)</td></tr>
+	<tr><td>log_device_placement</td><td>各演算とテンソルがどのデバイスに割り当てられているかを出力するか否か</td><td>True</td><td>なし(False)</td></tr>
+</table>
+
+<h2>サンプルプログラムの実行</h2>
+<p>前節にて作成したスクリプトを実行し、スタンドアローン版、クラスタ版のそれぞれの処理速度を比較する。</p>
+
+<h3>スタンドアローン版スクリプトの実行</h3>
+<p>スタンドアローン版スクリプトを実行すると、下記のような出力が得られるはずである。</p>
+<pre class="brush: js; toolbar: false">
+root@tf_paramserver:/notebooks# python cifar10_cluster_train.py
+>> Downloading cifar-10-binary.tar.gz 100.0%
+Successfully downloaded cifar-10-binary.tar.gz 170052171 bytes.
+Filling queue with 20000 CIFAR images before starting to train. This will take a few minutes.
+2016-05-08 02:43:30.635849: step 0, loss = 4.68 (12.8 examples/sec; 9.998 sec/batch)
+2016-05-08 02:43:45.431379: step 10, loss = 4.66 (98.7 examples/sec; 1.297 sec/batch)
+2016-05-08 02:43:58.407859: step 20, loss = 4.64 (98.5 examples/sec; 1.299 sec/batch)
+2016-05-08 02:44:11.413918: step 30, loss = 4.62 (98.4 examples/sec; 1.301 sec/batch)
+2016-05-08 02:44:24.434746: step 40, loss = 4.60 (98.3 examples/sec; 1.302 sec/batch)
+2016-05-08 02:44:37.489811: step 50, loss = 4.59 (98.0 examples/sec; 1.306 sec/batch)
+・・・
+2016-05-08 03:04:31.150605: step 950, loss = 3.41 (94.4 examples/sec; 1.356 sec/batch)
+2016-05-08 03:04:44.737516: step 960, loss = 3.40 (94.4 examples/sec; 1.355 sec/batch)
+2016-05-08 03:04:58.297885: step 970, loss = 3.39 (94.4 examples/sec; 1.356 sec/batch)
+2016-05-08 03:05:11.861645: step 980, loss = 3.38 (94.5 examples/sec; 1.355 sec/batch)
+2016-05-08 03:05:25.418296: step 990, loss = 3.36 (94.4 examples/sec; 1.356 sec/batch)
+</pre>
+<p>出力の1〜2行目にある通り、初回実行時はcifar-10のデータのダウンロードを行う。2回目以降はダウンロードされたデータを使用するためこの処理が行われることはない。実行速度に関して、筆者の検証環境ではスタンドアローン環境で1秒当たり約95枚の画像を処理することができていた。</p>
+
+<h3>クラスタ版スクリプトの実行</h3>
+<p>続いて、クラスタ版スクリプトを実行するために各インスタンスの起動を行う。前述したとおり、インスタンスごとにそれぞれターミナルを起動して実行すること。</p>
+<h4>パラメーター・サーバー用インスタンスの起動</h4>
+<pre class="brush: js; toolbar: false">
+root@tf_paramserver:/notebooks# python	# Pythonのインタラクティブシェルを起動する
+>>> import tensorflow as tf	# 以下は起動したPythonのインタラクティブシェル上で実行
+
+cluster = tf.train.ClusterSpec({
+	"ps": [
+		"<パラメーター・サーバーのIP>:2222"
+	],
+	"worker": [
+		"<ワーカー・ホスト1のIP>:2222",
+		"<ワーカー・ホスト2のIP>:2222"
+	]})
+server = tf.train.Server(cluster, job_name="ps", task_index=0)
+</pre>
+
+<h4>ワーカー・ホスト1用インスタンスの起動</h4>
+<pre class="brush: js; toolbar: false">
+root@tf_worker_1:/notebooks# python	# Pythonのインタラクティブシェルを起動する
+>>> import tensorflow as tf	# 以下は起動したPythonのインタラクティブシェル上で実行
+
+cluster = tf.train.ClusterSpec({
+	"ps": [
+		"<パラメーター・サーバーのIP>:2222"
+	],
+	"worker": [
+		"<ワーカー・ホスト1のIP>:2222",
+		"<ワーカー・ホスト2のIP>:2222"
+	]})
+server = tf.train.Server(cluster, job_name="worker", task_index=0)
+</pre>
+
+<h4>ワーカー・ホスト2用インスタンスの起動</h4>
+<pre class="brush: js; toolbar: false">
+root@tf_worker_2:/notebooks# python	# Pythonのインタラクティブシェルを起動する
+>>> import tensorflow as tf	# 以下は起動したPythonのインタラクティブシェル上で実行
+
+cluster = tf.train.ClusterSpec({
+	"ps": [
+		"<パラメーター・サーバーのIP>:2222"
+	],
+	"worker": [
+		"<ワーカー・ホスト1のIP>:2222",
+		"<ワーカー・ホスト2のIP>:2222"
+	]})
+server = tf.train.Server(cluster, job_name="worker", task_index=1)
+</pre>
+
+<h4>クラスタ版スクリプトの実行</h4>
+<p>クラスタ版スクリプトの実行結果は下記のようなものとなる。</p>
+<pre class="brush: js; toolbar: false">
+root@tf_paramserver:/notebooks# python cifar10_cluster_train.py
+Filling queue with 20000 CIFAR images before starting to train. This will take a few minutes.
+Filling queue with 20000 CIFAR images before starting to train. This will take a few minutes.
+2016-05-07 20:21:33.712485: step 0, loss = 4.67 (11.7 examples/sec; 10.936 sec/batch)
+2016-05-07 20:21:50.442159: step 10, loss = 4.65 (171.5 examples/sec; 0.746 sec/batch)
+2016-05-07 20:22:04.883423: step 20, loss = 4.63 (172.6 examples/sec; 0.742 sec/batch)
+2016-05-07 20:22:19.511816: step 30, loss = 4.62 (170.4 examples/sec; 0.751 sec/batch)
+2016-05-07 20:22:33.988097: step 40, loss = 4.60 (170.8 examples/sec; 0.749 sec/batch)
+2016-05-07 20:22:48.366351: step 50, loss = 4.58 (168.9 examples/sec; 0.758 sec/batch)
+・・・
+2016-05-07 20:44:58.754436: step 950, loss = 3.37 (165.2 examples/sec; 0.775 sec/batch)
+2016-05-07 20:45:13.747582: step 960, loss = 3.29 (165.3 examples/sec; 0.774 sec/batch)
+2016-05-07 20:45:28.697977: step 970, loss = 3.21 (180.7 examples/sec; 0.708 sec/batch)
+2016-05-07 20:45:43.997790: step 980, loss = 3.18 (166.2 examples/sec; 0.770 sec/batch)
+2016-05-07 20:45:59.043413: step 990, loss = 3.06 (179.8 examples/sec; 0.712 sec/batch)
+</pre>
+<p style="font-weight: bold;">上記の通り、クラスタ版では1秒当たり約180枚前後の画像を処理できている。スタンドアローン版が約95枚程度だったことを考えるとおよそ2倍の速度となっており、想定通りスケールアウトされていることが確認できる。<br />また、同じステップ数でも処理できるデータが多くなったので、lossもスタンドアローン版が3.36であったのに対し、クラスタ版では3.06とより低い値になっており、学習が早く進んでいることがわかる。</p>
+
+<h2>まとめ</h2>
+<p>本コラムではTensorFlowのクラスタ機能について紹介し、クラスタ用に修正したスクリプトを作成・実行し、性能がスケールすることを確認した。<br />今回はDockerを用いた仮想環境上でクラスタを構築したが、Google社では同じく同社で開発しているDockerのオーケストレーションツールであるKubernetesを用いてTensorFlowクラスタの管理しており、実は冒頭のAlphaGoのような大規模なTensor Flowクラスタは今回構築した環境の延長線上にあるともいえる。そういった意味でも、本コラムがこれからますます進化・発展していくだろうTensorFlowに対する皆さまの理解の一助になれたなら幸いである</p>
+
+<br />
+<!-- ▼ボタン▼ -->
+<a href="http://twitter.com/share" class="twitter-share-button" data-text="ビッグデータコラム「TensorFlowクラスタでディープラーニングの分散処理環境を構築してみる」/NTTデータ先端技術" data-count="horizontal">Tweet</a><script type="text/javascript" src="http://platform.twitter.com/widgets.js"></script>
+
+<iframe src="http://www.facebook.com/plugins/like.php?href=http%3A%2F%2Fwww.intellilink.co.jp%2Farticle%2Fcolumn%2Fbigdata-tf01.html&amp;send=false&amp;layout=button_count&amp;width=450&amp;show_faces=false&amp;action=like&amp;colorscheme=light&amp;font&amp;height=20" scrolling="no" frameborder="0" style="border:none; overflow:hidden; width:450px; height:20px;" allowTransparency="true"></iframe>
+<!-- ▲ボタン▲ -->.
+
+
+<!--- ナビゲーション -->
+<hr />
+<!--
+<div class="bt-area">
+	<a class="bt-before" href="/article/column/bigdata-kk01.html">Apache Sparkで始める<br />お手軽リアルタイムウインドウ集計</a><a class="bt-next" href="/article/column/bigdata-kk03.html">Big Data + Fast Data<br />= ラムダアーキテクチャー！</a>
+</div>
+--></div></div></div>  	</div>
+  	
+      	
+    	    <div class="links"></div>
+	          
+	</div> <!-- /node-inner -->
+</div> <!-- /node-->
+
+		</div>
+
+  </div>
+</div> <!-- /block-inner /block --><div id="block-block-16" class="block block-block block-even last clearfix">
+  <div class="block-inner">
+
+                		
+		<div class="content" >
+		  <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-45097119-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+		</div>
+
+  </div>
+</div> <!-- /block-inner /block -->  </div>
+        </div>
+
+        
+      </div>
+    </div> <!-- /content-inner /content -->
+
+    
+     <!-- /sidebar-first -->
+
+          <div id="sidebar-second" class="column sidebar second">
+        <div id="sidebar-second-inner" class="inner">
+            <div class="region region-sidebar-second">
+    <div id="block-menu-menu-column" class="block block-menu block-odd first clearfix">
+  <div class="block-inner">
+
+                		
+		<div class="content" >
+		  <ul class="menu"><li class="first last expanded active-trail id- mid-2300"><a href="/article/column/index.html" title="" class="active-trail">コラム</a><ul class="menu"><li class="first expanded active-trail id-column-on-big-data-analytics-and-platform mid-2469"><a href="/article/column/bigdata/index.html" title="" class="active-trail">ビッグデータコラム Column on Big Data Analytics and Platform</a><ul class="menu"><li class="first leaf id- mid-2462"><a href="/plan/corporate/column1.html" title="">ビッグデータ分析の意義と、分析のためのシステム基盤</a></li>
+<li class="leaf id- mid-2470"><a href="/article/column/bigdata01.html" title="">コラム連載開始にあたって</a></li>
+<li class="leaf id- mid-2471"><a href="/article/column/bigdata02.html" title="">スモールデータや外部データから始める</a></li>
+<li class="leaf id- mid-2475"><a href="/article/column/bigdata-ok01.html" title="">ビッグデータ活用から価値を生む仕組みについて</a></li>
+<li class="leaf apache-spark- mid-2495"><a href="/article/column/bigdata-kk01.html" title="">Apache Sparkで始めるお手軽リアルタイムウインドウ集計</a></li>
+<li class="leaf id-elasticsearch-spark-streaming- mid-2523"><a href="/article/column/bigdata-kk02.html" title="">楽しい可視化 ： elasticsearchとSpark Streamingの出会い</a></li>
+<li class="leaf big-data-fast-data- mid-2545"><a href="/article/column/bigdata-kk03.html" title="">Big Data + Fast Data = ラムダアーキテクチャー！</a></li>
+<li class="leaf apache-spark-word2vec- mid-2559"><a href="/article/column/bigdata-kk04.html" title="">Apache Sparkで始めるお手軽機械学習(Word2Vec編)</a></li>
+<li class="last leaf active-trail tensorflow- mid-2813"><a href="/article/column/bigdata-tf01.html" title="" class="active-trail active">TensorFlowクラスタで ディープラーニングの分散処理環境を構築してみる</a></li>
+</ul></li>
+<li class="collapsed id- mid-2540"><a href="/article/column/cld/index.html" title="">クラウドコラム 雲の下層から上層まで</a></li>
+<li class="collapsed devops--- mid-2497"><a href="/article/column/devops/index.html" title="">DevOpsコラム システムがシステムを創る - 環境構築と運用の自動化技術</a></li>
+<li class="collapsed oss- mid-2590"><a href="/article/column/oss/index.html" title="">OSSコラム</a></li>
+<li class="collapsed id- mid-2493"><a href="/article/column/security/index.html" title="">セキュリティコラム　身近なセキュリティ</a></li>
+<li class="collapsed oracle-oracle- mid-2483"><a href="/article/column/oracle/index.html" title="">Oracleコラム　ボトル片手にOracleデータベース</a></li>
+<li class="collapsed id- mid-2502"><a href="/article/column/hvdc/index.html" title="">直流給配電がひらく未来</a></li>
+<li class="collapsed itsm-it- mid-2476"><a href="/article/column/itsm/index.html" title="">ITSMコラム　ゲーミフィケーションで実践するITサービスマネジメント</a></li>
+<li class="collapsed blue3-ibm- mid-2508"><a href="/article/column/blue3/index.html" title="">Blue3コラム　最新基盤技術とIBMアライアンス</a></li>
+<li class="collapsed microsoft- mid-2574"><a href="/column/ms/index.html" title="">Microsoftコラム　ちょい足しノウハウから最新情報まで</a></li>
+<li class="collapsed fintech- mid-2773"><a href="/article/column/fintech/index.html" title="">FinTech コラム</a></li>
+<li class="leaf pci-dss- mid-2211"><a href="/article/pcidss/pcidss.html">PCI DSS徹底解説</a></li>
+<li class="collapsed id-vmware mid-2830"><a href="/article/column/vm/index.html" title="">基礎から学ぶVMware</a></li>
+<li class="expanded id- mid-2210"><a href="/article/vulner/vulner.html">脆弱性検証レポート</a><ul class="menu"><li class="first leaf id2015- mid-2546"><a href="/2015vulner" title="">2015年</a></li>
+<li class="leaf id2014- mid-2518"><a href="/2014vulner" title="">2014年</a></li>
+<li class="leaf id2013- mid-2302"><a href="/2013vulner" title="">2013年</a></li>
+<li class="leaf id2012- mid-2301"><a href="/2012vulner" title="">2012年</a></li>
+<li class="last leaf id2011- mid-2298"><a href="/2011vulner" title="">2011年</a></li>
+</ul></li>
+<li class="last expanded oracle- mid-2485"><a href="/article/column/oracleletter/index.html">Oracleサポート通信</a><ul class="menu"><li class="first leaf id2016- mid-2651"><a href="/2016oracle-supportletter" title="">2016年</a></li>
+<li class="leaf id2015- mid-2519"><a href="/2015oracle-supportletter" title="">2015年</a></li>
+<li class="leaf id2014- mid-2487"><a href="/2014oracle-supportletter" title="">2014年</a></li>
+<li class="last leaf id2013- mid-2486"><a href="/2013oracle-supportletter" title="">2013年</a></li>
+</ul></li>
+</ul></li>
+</ul>		</div>
+
+  </div>
+</div> <!-- /block-inner /block --><div id="block-block-14" class="block block-block block-even last clearfix">
+  <div class="block-inner">
+
+                		
+		<div class="content" >
+		  <ul class="inquiry"><li><a href="/contact?title=TensorFlow%E3%82%AF%E3%83%A9%E3%82%B9%E3%82%BF%E3%81%A7+%E3%83%87%E3%82%A3%E3%83%BC%E3%83%97%E3%83%A9%E3%83%BC%E3%83%8B%E3%83%B3%E3%82%B0%E3%81%AE%E5%88%86%E6%95%A3%E5%87%A6%E7%90%86%E7%92%B0%E5%A2%83%E3%82%92%E6%A7%8B%E7%AF%89%E3%81%97%E3%81%A6%E3%81%BF%E3%82%8B">お問い合わせ</a></li></ul>		</div>
+
+  </div>
+</div> <!-- /block-inner /block -->  </div>
+        </div>
+      </div>
+     <!-- /sidebar-second -->
+
+  </div> <!-- /main -->
+  
+</div> <!-- /page -->
+
+<!-- ______________________ FOOTER _______________________ -->
+
+  <div id="footer">
+  	<div id="footer-inner">
+    	  <div class="region region-footer">
+    <div id="block-menu-menu-footer-menu" class="block block-menu block-odd first clearfix">
+  <div class="block-inner">
+
+                		
+		<div class="content" >
+		  <ul class="menu"><li class="first leaf id- mid-1355"><a href="/plan/info/security.html" title="情報セキュリティ方針">情報セキュリティ方針</a></li>
+<li class="leaf id- mid-1354"><a href="/plan/info/privacy.html" title="">個人情報保護方針</a></li>
+<li class="leaf id- mid-1356"><a href="/plan/info/copyright.html" title="コピーライト・免責事項">コピーライト・免責事項</a></li>
+<li class="last leaf id- mid-1745"><a href="/sitemap" title="サイトマップ">サイトマップ</a></li>
+</ul>		</div>
+
+  </div>
+</div> <!-- /block-inner /block --><div id="block-block-1" class="block block-block block-even clearfix">
+  <div class="block-inner">
+
+                		
+		<div class="content" >
+		  <ul id="footer-nttdata-site-link">
+<li><a href="http://www.nttdata.com/jp/ja/" >NTTデータ サイトへ</a></li>
+</ul>		</div>
+
+  </div>
+</div> <!-- /block-inner /block --><div id="block-block-17" class="block block-block block-odd clearfix">
+  <div class="block-inner">
+
+                		
+		<div class="content" >
+		  <div style="position: absolute; top: -3.15em; left: 43em;">
+<a href="https://twitter.com/intellilink_pr" class="twitter-follow-button" data-show-count="false" data-lang="ja" data-show-screen-name="false">@intellilink_prをフォロー</a>
+</div>
+<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>		</div>
+
+  </div>
+</div> <!-- /block-inner /block --><div id="block-block-2" class="block block-block block-even last clearfix">
+  <div class="block-inner">
+
+                		
+		<div class="content" >
+		  <div id="footer-copy-area" class="clearfix">
+<img width="182" height="14" alt="NTTデータ先端技術株式会社" src="/sites/all/themes/basic/images/footer_company_name.png" />
+<p id="footer-copy">Copyright &copy; 2016 NTT DATA INTELLILINK Corporation. All rights reserved.</p>
+</div>		</div>
+
+  </div>
+</div> <!-- /block-inner /block -->  </div>
+    </div>
+  </div> <!-- /footer -->
+
+  </body>
+</html>
