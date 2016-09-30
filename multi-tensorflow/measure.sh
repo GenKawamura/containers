@@ -9,7 +9,7 @@ do
 done
 
 ## Multi CPU workers
-workers="4 8 12 16 20"
+workers="3 5 7 9"
 for step in $steps
 do
     for worker in $workers

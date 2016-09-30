@@ -179,8 +179,11 @@ mkdir -v /tmp/docker
 yum -y install docker-io
 /etc/init.d/docker start
 chkconfig docker on
+
+## For old version (1.5)
 sed -e "s/^\(docker:x:[0-9]*:\).*$/\1atlas001/" -i /etc/group
 
+sed -e "s/^dockerroot:x:489:.*$/dockerroot:x:489:gen/g" -i /etc/group
 
 ##-----------------------------------------------
 # Docker command examples

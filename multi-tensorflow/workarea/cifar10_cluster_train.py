@@ -49,7 +49,7 @@ from six.moves import xrange  # pylint: disable=redefined-builtin
 import tensorflow as tf
 from tensorflow.models.image.cifar10 import cifar10
 
-PS_NODE = "172.17.1.7"
+PS_NODE = "172.17.1.11"
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -58,7 +58,7 @@ tf.app.flags.DEFINE_string('train_dir', '/tmp/cifar10_train',
                            """and checkpoint.""")
 tf.app.flags.DEFINE_integer('max_steps', 100,
                             """Number of batches to run.""")
-tf.app.flags.DEFINE_integer('num_workers', 2,
+tf.app.flags.DEFINE_integer('num_workers', 3,
                             """How many GPUs to use.""")
 tf.app.flags.DEFINE_boolean('log_device_placement', False,
                             """Whether to log device placement.""")

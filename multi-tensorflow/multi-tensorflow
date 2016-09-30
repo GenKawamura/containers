@@ -99,7 +99,7 @@ ${worker_ips[$worker_id]}     ${TF_WORKER}${worker_id}"
     sed -e "s/IP_OF_PARAMETER_SERVER/$ps_ip/g" -i $CLUSTER_TRAINER
 
 
-    echo "Loading parameter server listners [$worker_id]"
+    echo "Loading parameter server listners [0]"
     docker exec -itd $TF_PARAMETER_SERVER bash -c "python -i ./tensorflow_cluster_instance.py -p -n $num_of_workers -t 0 -i $ps_ip"
 
     for worker_id in $(seq 1 $num_of_workers)
