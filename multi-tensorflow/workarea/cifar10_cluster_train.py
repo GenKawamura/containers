@@ -49,7 +49,7 @@ from six.moves import xrange  # pylint: disable=redefined-builtin
 import tensorflow as tf
 from tensorflow.models.image.cifar10 import cifar10
 
-PS_NODE = "IP_OF_PARAMETER_SERVER"
+PS_NODE = "172.17.1.7"
 
 FLAGS = tf.app.flags.FLAGS
 

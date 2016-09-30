@@ -4,36 +4,52 @@ cd $(dirname $0)
 . multi-tensorflow.conf
 
 #-----------------------------------------------
-# Function
+# Functions
 #-----------------------------------------------
 DOCKER_RUN(){
-    local container_name=$1
-    local cpu_num=$2
+    local mode=$1
+    local container_name=$2
+    local cpu_num=$3
+    shift
     shift
     shift
 
     CPUSET_OPTION="--cpuset-cpus=$cpu_num"
     docker -v | grep 1.5 &> /dev/null && CPUSET_OPTION="--cpuset=$cpu_num"
 
-    echo "docker run -it --name $container_name --rm $CPUSET_OPTION -h $container_name -w $CONTAINER_WORKAREA -v $PWD:$CONTAINER_WORKAREA $CONTAINER_TAG $*"
-    /usr/bin/time -f "Processing Time = %e\n" docker run -it --name $container_name --rm $CPUSET_OPTION -h $container_name -w $CONTAINER_WORKAREA -v $PWD:$CONTAINER_WORKAREA $CONTAINER_TAG $*
+    local MODE_OPTION="-it --rm"
+    [ "$mode" == "detach" ] && MODE_OPTION="-id"
 
+    local docker_command="docker run $MODE_OPTION --name $container_name $CPUSET_OPTION -h $container_name -w $CONTAINER_WORKAREA -v $PWD:$CONTAINER_WORKAREA $CONTAINER_TAG $*"
+    echo "$docker_command"
+    if [ "$mode" == "measure" ]; then
+	/usr/bin/time -f "Processing Time = %e\n" $docker_command
+    else
+	eval $docker_command
+    fi
+    return $?
 }
 
 
-generate_cpu_workers(){
+DOCKER_KILL(){
+    local running_dockers=$(docker ps -q)
+    [ ! -z "$running_dockers" ] && docker kill $running_dockers
+    docker rm $(docker ps -a -q)
+}
+
+
+generate_tf_scripts(){
     local num_of_steps=$1
     local num_of_workers=$2
 
     ## Copying original file
-    #[ ! -e $CIFAR10_GPU_TRAINER ] && echo "Script [$CIFAR10_GPU_TRAINER] does not exist" && exit -1 
     cp -v $CIFAR10_GPU_TRAINER $WORKAREA
     cp -v $CIFAR10_GPU_TRAINER $STANDALONE_TRAINER
     cp -v $CIFAR10_GPU_TRAINER $CLUSTER_TRAINER
     
     ## Patching for making standalone & cluster trainers
     patch $STANDALONE_TRAINER cifar10_standalone_train.patch
-    patch $CLUSTER_TRAINER cifar10_cluster_train.patch2
+    patch $CLUSTER_TRAINER cifar10_cluster_train.patch
 
     ## Setting max steps & workers
     echo "MAX_STEPS = $num_of_steps"
@@ -44,8 +60,66 @@ generate_cpu_workers(){
 }
 
 
-generate_base_container(){
-    docker build -t $CONTAINER_TAG .
+#----------------------------------------------------
+# The following function allows us to run multi CPU mode
+#----------------------------------------------------
+run_multi_cpu_tensorflow(){
+    local hosts=""
+
+    echo "Booting parameter server"
+    DOCKER_RUN "detach" $TF_PARAMETER_SERVER 0 /bin/bash
+    echo -n "Getting parameter server IP ---> "
+    local ps_ip=$(docker exec -it $TF_PARAMETER_SERVER ip addr show eth0 | grep "inet " | perl -pe "s/.*inet (.*)\/.*/\1/g")
+    echo "$ps_ip"
+    hosts="$ps_ip     $TF_PARAMETER_SERVER"
+
+    local worker_id=
+    local worker_ips=
+    for worker_id in $(seq 1 $num_of_workers)
+    do
+	echo "Booting all workers"
+	DOCKER_RUN "detach" ${TF_WORKER}${worker_id} $worker_id /bin/bash
+
+	echo -n "Getting worker IPs [$worker_id] ---> "
+	worker_ips[$worker_id]=$(docker exec -it ${TF_WORKER}${worker_id} ip addr show eth0 | grep "inet " | perl -pe "s/.*inet (.*)\/.*/\1/g")
+	echo "${worker_ips[$worker_id]}"
+	hosts="$hosts
+${worker_ips[$worker_id]}     ${TF_WORKER}${worker_id}"
+    done
+
+    ### To avoid DNS errors, writing IPs in /etc/hosts (rather stupid!!)
+    echo "$hosts"
+    docker exec -it -u root $TF_PARAMETER_SERVER bash -c "echo -e '$hosts' >> /etc/hosts"
+    for worker_id in $(seq 1 $num_of_workers)
+    do
+	docker exec -it -u root ${TF_WORKER}${worker_id} bash -c "echo '$hosts' >> /etc/hosts"
+    done
+
+    ## Changing hard coded IP in TF cluster script
+    sed -e "s/IP_OF_PARAMETER_SERVER/$ps_ip/g" -i $CLUSTER_TRAINER
+
+
+    echo "Loading parameter server listners [$worker_id]"
+    docker exec -itd $TF_PARAMETER_SERVER bash -c "python -i ./tensorflow_cluster_instance.py -p -n $num_of_workers -t 0 -i $ps_ip"
+
+    for worker_id in $(seq 1 $num_of_workers)
+    do
+	echo "Loading worker lister [$worker_id]"
+	local task_id=$(expr $worker_id - 1)
+	docker exec -itd ${TF_WORKER}${worker_id} bash -c "python -i ./tensorflow_cluster_instance.py -w -n $num_of_workers -t $task_id -i $ps_ip"
+    done
+
+    echo "
+##########################################################
+             Starting multi CPU mode TF ...
+##########################################################
+"
+    sleep 10
+    /usr/bin/time -f "Processing Time = %e\n" docker exec -it $TF_PARAMETER_SERVER python workarea/cifar10_cluster_train.py
+
+
+    echo "Killing all ..."
+    DOCKER_KILL
 }
 
 
@@ -54,14 +128,13 @@ num_of_workers=2
 cpus=0-0
 usage="$0 [option]
  -n:  num of steps [default: $num_of_steps]
- -m:  num of workers [default: $num_of_workers]
+ -w:  num of workers [default: $num_of_workers]
  -c:  CPUs [default: $cpus]
 
  -C:  generate base container
  -o:  generate script to workarea in docker
- -s:  run in single mode
- -p:  run a parameter server
- -w:  run workers
+ -s:  run TF in single mode
+ -m:  run TF in multi cpu mode
 
 
  * Examples
@@ -74,12 +147,8 @@ usage="$0 [option]
    Running single mode (in CPU 0-3)
    $0 -c 0-3 -s
 
-   Running parameter server
-   $0 -p
-
-   Running workers
-   $0 -w
- 
+   Running multi TF (by 100 steps, 2 workers)
+   $0 -n 100 -w 3 -o -m
 "
 
 if [ $# -eq 0 ]; then
@@ -91,36 +160,31 @@ fi
 #--------------------------
 # Getopt
 #--------------------------
-while getopts "n:m:c:gCopwshv" op
+while getopts "n:w:c:Cgomshv" op
   do
   case $op in
       n)  num_of_steps=$OPTARG
 	  ;;
-      m)  num_of_workers=$OPTARG
+      w)  num_of_workers=$OPTARG
 	  ;;
       c) cpus=$OPTARG
 	  ;;
-      g)
-	  generate_cpu_workers $num_of_steps $num_of_workers
-          ;;
       C)
-	  generate_base_container
+	  echo "Generating TensorFlow base container"
+	  docker build -t $CONTAINER_TAG .
+	  ;;
+      g)
+	  echo "Generating TensorFlow scripts"
+	  generate_tf_scripts $num_of_steps $num_of_workers
 	  ;;
       o)
-	  DOCKER_RUN $TF_PARAMETER_SERVER 1 ./multi-tensorflow -n $num_of_steps -m $num_of_workers -g
+	  DOCKER_RUN "interactive" $TF_PARAMETER_SERVER 0 ./multi-tensorflow -n $num_of_steps -w $num_of_workers -g
 	  ;;
-      l)
-	  run_tf_lister
-	  ;;
-      p)
-	  DOCKER_RUN $TF_PARAMETER_SERVER 1 ./multi-tensorflow -p
-	  ;;
-      w)  
-	  DOCKER_RUN $TF_WORKER1 1 ./multi-tensorflow -w $OPTARG
+      m)
+	  run_multi_cpu_tensorflow
 	  ;;
       s)
-	  DOCKER_RUN $TF_PARAMETER_SERVER $cpus python workarea/cifar10_standalone_train.py
-	  #DOCKER_RUN $TF_PARAMETER_SERVER 1,2 cat /proc/cpuinfo
+	  DOCKER_RUN "measure" $TF_PARAMETER_SERVER $cpus python workarea/cifar10_standalone_train.py
 	  ;;
       h) echo "$usage"
           exit 0

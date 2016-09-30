@@ -123,7 +123,7 @@ patching file cifar10_cluster_train.py
 #--------------------------------------------
 
 ## For parameter server instance
-# The follwoing python code will be inputted in interactive python shell
+# The follwoing python code will be executed in an IPython shell
 import tensorflow as tf
  
 cluster = tf.train.ClusterSpec({
@@ -131,36 +131,36 @@ cluster = tf.train.ClusterSpec({
         "<Paramter server IP>:2222"
     ],
     "worker": [
-        "<ワーカー・ホスト1のIP>:2222",
-        "<ワーカー・ホスト2のIP>:2222"
+        "<Worker1 IP>:2222",
+        "<Worker2 IP>:2222"
     ]})
 server = tf.train.Server(cluster, job_name="ps", task_index=0)
 
 
 ## For TF1
-import tensorflow as tf    # 以下は起動したPythonのインタラクティブシェル上で実行
+import tensorflow as tf
  
 cluster = tf.train.ClusterSpec({
     "ps": [
-        "<パラメーター・サーバーのIP>:2222"
+        "<Paramter server IP>:2222"
     ],
     "worker": [
-        "<ワーカー・ホスト1のIP>:2222",
-        "<ワーカー・ホスト2のIP>:2222"
+        "<Worker1 IP>:2222",
+        "<Worker2 IP>:2222"
     ]})
 server = tf.train.Server(cluster, job_name="worker", task_index=0)
 
 
 ## For TF2
-import tensorflow as tf    # 以下は起動したPythonのインタラクティブシェル上で実行
+import tensorflow as tf
  
 cluster = tf.train.ClusterSpec({
     "ps": [
-        "<パラメーター・サーバーのIP>:2222"
+        "<Paramter server IP>:2222"
     ],
     "worker": [
-        "<ワーカー・ホスト1のIP>:2222",
-        "<ワーカー・ホスト2のIP>:2222"
+        "<Worker1 IP>:2222",
+        "<Worker2 IP>:2222"
     ]})
 server = tf.train.Server(cluster, job_name="worker", task_index=1)
 
@@ -168,3 +168,51 @@ server = tf.train.Server(cluster, job_name="worker", task_index=1)
 ## In paramter server
 root@tf_paramserver:/notebooks# python cifar10_cluster_train.py
 
+
+
+##-----------------------------------------------
+# Installation & configuration in worker nodes
+##-----------------------------------------------
+
+mkdir -v /tmp/docker
+[ ! -e /var/lib/docker ] && ln -vs /tmp/docker /var/lib/docker
+yum -y install docker-io
+/etc/init.d/docker start
+chkconfig docker on
+sed -e "s/^\(docker:x:[0-9]*:\).*$/\1atlas001/" -i /etc/group
+
+
+##-----------------------------------------------
+# Docker command examples
+##-----------------------------------------------
+
+docker run -td multi-tensorflow /bin/bash
+docker exec -it da0da8c792da303337e8e42e585304c1a9f5eb04c9462c8deceef666ed4547af /bin/bash
+
+docker top parameter_server | grep python | awk '{print $2}'
+
+
+[gen@germanium32 multi-tensorflow]$ docker run -td multi-tensorflow /bin/bash
+910890d2001b246717af85ec0dcf722b0766dfca9d76aed897caafb094efac7e
+[gen@germanium32 multi-tensorflow]$ docker ps
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS                NAMES
+910890d2001b        multi-tensorflow    "/bin/bash"         3 seconds ago       Up 2 seconds        6006/tcp, 8888/tcp   agitated_almeida    
+[gen@germanium32 multi-tensorflow]$ docker kill 910890d2001b246717af85ec0dcf722b0766dfca9d76aed897caafb094efac7e
+910890d2001b246717af85ec0dcf722b0766dfca9d76aed897caafb094efac7e
+
+
+[gen@germanium32 multi-tensorflow]$ docker run -td --name test multi-tensorflow /bin/bash
+37e1edc66554f97546b3ad4d832ccbd78907a1ad991e89db2764a4a9ae24f548
+[gen@germanium32 multi-tensorflow]$ docker rm $(docker ps -a -q)
+Error response from daemon: Cannot destroy container 37e1edc66554: Conflict, You cannot remove a running container. Stop the container before attempting removal or use -f
+910890d2001b
+bccd367d7fae
+da0da8c792da
+c7a2e0432813
+Error: failed to remove containers: [37e1edc66554]
+[gen@germanium32 multi-tensorflow]$ docker ps
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS                NAMES
+37e1edc66554        multi-tensorflow    "/bin/bash"         44 seconds ago      Up 43 seconds       6006/tcp, 8888/tcp   test                
+[gen@germanium32 multi-tensorflow]$ docker kill test
+test
+[gen@germanium32 multi-tensorflow]$ docker rm $(docker ps -a -q)

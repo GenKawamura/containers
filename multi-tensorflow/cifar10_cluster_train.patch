@@ -1,6 +1,6 @@
---- cifar10_multi_gpu_train.py  2016-04-13 00:00:00.000000000 +0000
-+++ cifar10_cluster_train.py    2016-04-13 00:00:00.000000000 +0000
-@@ -49,14 +49,16 @@ from six.moves import xrange  # pylint:
+--- cifar10_cluster_train.py.orig	2016-09-28 18:32:18.467537558 +0200
++++ cifar10_cluster_train.py	2016-09-28 18:34:56.551286807 +0200
+@@ -49,14 +49,16 @@
  import tensorflow as tf
  from tensorflow.models.image.cifar10 import cifar10
  
@@ -19,7 +19,7 @@
                              """How many GPUs to use.""")
  tf.app.flags.DEFINE_boolean('log_device_placement', False,
                              """Whether to log device placement.""")
-@@ -147,7 +149,7 @@ def average_gradients(tower_grads):
+@@ -147,7 +149,7 @@
  
  def train():
    """Train CIFAR-10 for a number of steps."""
@@ -28,10 +28,10 @@
      # Create a variable to count the number of train() calls. This equals the
      # number of batches processed * FLAGS.num_gpus.
      global_step = tf.get_variable(
-@@ -171,8 +173,8 @@ def train():
+@@ -171,8 +173,8 @@
  
      # Calculate the gradients for each model tower.
-     tower_grads = [] 
+     tower_grads = []
 -    for i in xrange(FLAGS.num_gpus):
 -      with tf.device('/gpu:%d' % i):
 +    for i in xrange(FLAGS.num_workers):
@@ -39,7 +39,7 @@
          with tf.name_scope('%s_%d' % (cifar10.TOWER_NAME, i)) as scope:
            # Calculate the loss for one tower of the CIFAR model. This function
            # constructs the entire CIFAR model but shares the variables across
-@@ -231,9 +233,7 @@ def train():
+@@ -231,9 +233,7 @@
      # Start running operations on the Graph. allow_soft_placement must be set to
      # True to build towers on GPU, as some of the ops do not have GPU
      # implementations.
@@ -50,7 +50,7 @@
      sess.run(init)
  
      # Start the queue runners.
-@@ -249,9 +249,9 @@ def train():
+@@ -249,9 +249,9 @@
        assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
  
        if step % 10 == 0:
